@@ -6,18 +6,21 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 
+// Clave de seguridad del proyecto (puedes cambiar 'OlaVerde2026' por la que prefieras)
+const CLAVE_PROYECTO = process.env.API_PIN || 'OlaVerde2026';
+
 // Conexión a la base de datos de Neon
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-// 1. Ruta raíz: Muestra la tabla visual en HTML
+// 1. Ruta raíz: Muestra la interfaz gráfica
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 2. Endpoint GET: Devuelve los datos en formato JSON para llenar la tabla
+// 2. Endpoint GET: Consultar datos para la tabla
 app.get('/api/v1/proceso/prensado', async (req, res) => {
   try {
     const resultado = await pool.query(
@@ -37,8 +40,18 @@ app.get('/api/v1/proceso/prensado', async (req, res) => {
   }
 });
 
-// 3. Endpoint POST: Recibe y guarda nuevos datos de la prensa de lirio
+// 3. Endpoint POST: Guardar registro (PROTEGIDO POR PIN/CLAVE)
 app.post('/api/v1/proceso/prensado', async (req, res) => {
+  const claveRecibida = req.headers['x-api-key'] || req.body.clave_acceso;
+
+  // Validación de seguridad
+  if (!claveRecibida || claveRecibida !== CLAVE_PROYECTO) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Acceso no autorizado. Clave de seguridad incorrecta o ausente.'
+    });
+  }
+
   const {
     lote_id,
     peso_inicial_kg,
@@ -49,7 +62,6 @@ app.post('/api/v1/proceso/prensado', async (req, res) => {
     operador_id
   } = req.body;
 
-  // Validación básica
   if (peso_final_kg >= peso_inicial_kg) {
     return res.status(400).json({
       status: 'error',
@@ -89,5 +101,5 @@ app.post('/api/v1/proceso/prensado', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Servidor de Ola Verde corriendo en el puerto ${PORT}`);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
