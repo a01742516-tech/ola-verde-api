@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>La Ola Verde - Panel de Control</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f7f6; color: #333; }
+    h1 { color: #2e7d32; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #2e7d32; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .no-data { text-align: center; color: #777; font-style: italic; padding: 20px; }
+    button { background-color: #2e7d32; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+    button:hover { background-color: #1b5e20; }
+  </style>
+</head>
+<body>
+
+  <h1>🌱 La Ola Verde — Registros de Prensado</h1>
+  <p>Monitoreo en tiempo real de lotes de lirio acuático en Culiacán, Sinaloa.</p>
+
+  <div class="card">
+    <button onclick="cargarDatos()">🔄 Actualizar Tabla</button>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Lote</th>
+          <th>Peso Inicial (kg)</th>
+          <th>Presión (PSI)</th>
+          <th>Tiempo (min)</th>
+          <th>Lixiviado (L)</th>
+          <th>Peso Final (kg)</th>
+          <th>Operador</th>
+          <th>Fecha / Hora</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-cuerpo">
+        <tr>
+          <td colspan="9" class="no-data">Cargando registros...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function cargarDatos() {
+      const tbody = document.getElementById('tabla-cuerpo');
+      try {
+        const respuesta = await fetch('/api/v1/proceso/prensado');
+        const resultado = await respuesta.json();
+
+        if (!resultado.data || resultado.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" class="no-data">Aún no hay datos registrados. Ingrese un registro para comenzar.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        resultado.data.forEach(item => {
+          const fila = document.createElement('tr');
+          fila.innerHTML = `
+            <td>${item.id}</td>
+            <td><strong>${item.lote_id}</strong></td>
+            <td>${item.peso_inicial_kg}</td>
+            <td>${item.presion_prensa_psi}</td>
+            <td>${item.tiempo_prensado_min}</td>
+            <td>${item.litros_lixiviado}</td>
+            <td>${item.peso_final_kg}</td>
+            <td>${item.operador_id}</td>
+            <td>${new Date(item.fecha_registro).toLocaleString()}</td>
+          `;
+          tbody.appendChild(fila);
+        });
+      } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="9" class="no-data" style="color:red;">Error al conectar con la base de datos.</td></tr>';
+      }
+    }
+
+    cargarDatos();
+  </script>
+
+</body>
+</html>
